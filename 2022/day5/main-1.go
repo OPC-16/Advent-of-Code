@@ -24,23 +24,24 @@ func (s *Stack) addToBottom(r rune) {
     s.elements = append([]rune {r}, s.elements...)
 }
 
-func (s Stack) String() string {
+func (s Stack) convertToString() string {
     var str string
     for _, r := range s.elements {
         str += string(r) + " "
     }
     return str
 }
-func main() {
-    file, _ := os.Open("test_input.txt")
 
+func main() {
+    file, _ := os.Open("puzzle_input.txt")
     defer file.Close()
-    
+
     sc := bufio.NewScanner(file)
 
-    //create slice of Stacks
+    //create slice of stacks
     stacks := make([]Stack, 9)
 
+    //parsing the input
     sc.Scan()
     for sc.Text() != " 1   2   3   4   5   6   7   8   9 " {
         for i, r := range sc.Text() {
@@ -51,22 +52,21 @@ func main() {
         sc.Scan()
     }
 
-    //read the empty line
+    //reading the empty line
     sc.Scan()
 
     for sc.Scan() {
-        var toMove, from, to int
-        fmt.Sscanf(sc.Text(), "move %d from %d to %d", &toMove, &from, &to)
+        var howManyToMove, fromMove, toMove int
+        fmt.Sscanf(sc.Text(), "move %d from %d to %d", &howManyToMove, &fromMove, &toMove)
 
-        //move elements one by one
-        for i := 0; i < toMove; i++ {
-            r := stacks[from-1].pop()
-            stacks[to-1].push(r)
+        //move the elements
+        for i := 0; i < howManyToMove; i++ {
+            stacks[toMove-1].push(stacks[fromMove-1].pop())
         }
     }
 
-    // for _, s := range stacks {
-    //     fmt.Println(string(s.pop()))
-    // }
-    fmt.Println("sldkfj")
+    for _, s := range stacks {
+        fmt.Print(string(s.pop()))
+    }
+    
 }
