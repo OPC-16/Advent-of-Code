@@ -5,83 +5,65 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+    "strings"
 )
 
 type Dir struct {
     Name     string
-    Children []string
     Size     int
+    isFile bool
+    sons map[string]*Dir
+    father *Dir
 }
-
-func stringToDir(str string) *Dir {
-    for _, d := range dirs {
-        if str == d.Name {
-            return &d
-        }
-    }
-    return &Dir{}
-}
-
-func calcDirSize(currDir *Dir) int {
-    //base case
-    if len(currDir.Children) == 0 {
-        return currDir.Size
-    }
-
-    for i := 0; i < len(currDir.Children); i++ {
-        currDir.Size += calcDirSize(stringToDir(currDir.Children[i]))
-    }
-
-    return currDir.Size
-}
-
-var dirs []Dir
 
 func main() {
-    file, _ := os.Open("test_input.txt")
+    file, _ := os.Open("puzzle_input.txt")
     defer file.Close()
 
     sc := bufio.NewScanner(file)
 
+    var currDir *Dir
+    dirs := []*Dir{}
+
     for sc.Scan() {
-        line := sc.Text()
-
-        if line[0] == '$' {     //if that line is a command
-            if line == "$ ls" || line == "$ cd .." {
-                continue
+        line := strings.Fields(sc.Text())
+        if len(line) > 2 {
+            if line[2] == ".." {
+                currDir = currDir.father
+            } else if line[2] == "/" {
+                currDir = &Dir{"/", 0, false, make(map[string]*Dir), nil}
             } else {
-                dir := Dir{
-                    Name: line[5:],
-                }
-                dirs = append(dirs, dir)
-            } 
-        } else {
-            if line[0] == 'd' {     //add child directories
-                child := line[4:]
-                dirs[len(dirs)-1].Children = append(dirs[len(dirs)-1].Children, child)
-            } else {        //add the sizes of files
-                var i int
-                for i=0; i<len(line); i++ {
-                    if line[i] == ' ' {
-                        break
-                    }
-                }
-
-                size, _ := strconv.Atoi(line[:i])
-                dirs[len(dirs)-1].Size += size
+                currDir = currDir.sons[line[2]]
             }
+        } else if line[0] == "dir" {
+            currDir.sons[line[1]] = &Dir{line[1], 0, false, make(map[string]*Dir), currDir}
+            dirs = append(dirs, currDir.sons[line[1]])
+        } else if line[0] != "$" {
+            size, _ := strconv.Atoi(line[0])
+            currDir.sons[line[1]] = &Dir{line[1], size, true, nil, currDir}
         }
     }
 
+    var totalSize int
+
     for _, dir := range dirs {
-        fmt.Printf("DirName: %s\n   Size: %d\n   Children: %v\n", dir.Name, dir.Size, dir.Children)
+        size := calcSize(*dir)
+        if size <= 100000 {
+            totalSize += size
+        }
     }
 
-    //TODO: name, size, children even totalSIze is correct but the changes in size are not reflected in the original dirs slice
-    totalSize := calcDirSize(&dirs[0])
+    fmt.Println(totalSize)
+}
 
-    fmt.Printf("\n------------------------------ totalSize = %d\n", totalSize)
-    for _, dir := range dirs {
-        fmt.Printf("DirName: %s\n   Size: %d\n   Children: %v\n", dir.Name, dir.Size, dir.Children)
+func calcSize(root Dir) (size int) {
+    if root.isFile {
+        return root.Size
     }
+
+    for _, d := range root.sons {
+        size += calcSize(*d)
+    }
+
+    return size
 }
