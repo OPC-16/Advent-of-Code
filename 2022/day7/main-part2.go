@@ -1,0 +1,72 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+    "strings"
+)
+
+// Total disk space is 70000000
+// space required to run update is 30000000
+
+type Dir struct {
+    Name     string
+    Size     int
+    isFile bool
+    sons map[string]*Dir
+    father *Dir
+}
+
+func main() {
+    file, _ := os.Open("test_input.txt")
+    defer file.Close()
+
+    sc := bufio.NewScanner(file)
+
+    var currDir *Dir
+    dirs := []*Dir{}
+
+    for sc.Scan() {
+        line := strings.Fields(sc.Text())
+        if len(line) > 2 {
+            if line[2] == ".." {
+                currDir = currDir.father
+            } else if line[2] == "/" {
+                currDir = &Dir{"/", 0, false, make(map[string]*Dir), nil}
+            } else {
+                currDir = currDir.sons[line[2]]
+            }
+        } else if line[0] == "dir" {
+            currDir.sons[line[1]] = &Dir{line[1], 0, false, make(map[string]*Dir), currDir}
+            dirs = append(dirs, currDir.sons[line[1]])
+        } else if line[0] != "$" {
+            size, _ := strconv.Atoi(line[0])
+            currDir.sons[line[1]] = &Dir{line[1], size, true, nil, currDir}
+        }
+    }
+
+    // var totalSize int
+
+    for _, dir := range dirs {
+        if dir.Name == "/" {
+            fmt.Println("/ found")
+        }
+    }
+
+
+    // fmt.Println(totalSize)
+}
+
+func calcSize(root Dir) (size int) {
+    if root.isFile {
+        return root.Size
+    }
+
+    for _, d := range root.sons {
+        size += calcSize(*d)
+    }
+
+    return size
+}
